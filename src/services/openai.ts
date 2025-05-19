@@ -43,8 +43,18 @@ export async function getChatCompletion(
     });
 
     return completion.choices[0]?.message?.content || 'Sorry, I could not generate a response.';
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error calling OpenAI:', error);
+    
+    // Check for specific error types
+    if (error.status === 429) {
+      if (error.error?.type === 'insufficient_quota') {
+        throw new Error('You have exceeded your OpenAI API quota. Please check your billing details or use a different API key.');
+      } else {
+        throw new Error('OpenAI rate limit exceeded. Please try again in a moment.');
+      }
+    }
+    
     throw new Error('Failed to get a response from OpenAI');
   }
 }

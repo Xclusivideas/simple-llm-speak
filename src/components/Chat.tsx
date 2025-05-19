@@ -85,12 +85,24 @@ const Chat: React.FC = () => {
       };
       
       setMessages(prev => [...prev, aiResponse]);
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error getting AI response:", error);
+      
+      // Show specific error message based on error content
+      let errorDescription = "Failed to get a response from OpenAI. Please check your API key and try again.";
+      
+      if (error.message?.includes('exceeded your OpenAI API quota')) {
+        errorDescription = "You've exceeded your OpenAI API quota. Please check your billing details or use a different API key.";
+        // When quota is exceeded, prompt for a new API key
+        setShowApiKeyInput(true);
+      } else if (error.message?.includes('rate limit')) {
+        errorDescription = "OpenAI rate limit reached. Please wait a moment and try again.";
+      }
+      
       toast({
         variant: "destructive",
         title: "Error",
-        description: "Failed to get a response from OpenAI. Please check your API key and try again."
+        description: errorDescription
       });
     } finally {
       setIsLoading(false);
