@@ -5,6 +5,7 @@ import ChatHeader from "./ChatHeader";
 import ChatMessage, { MessageType } from "./ChatMessage";
 import ChatInput from "./ChatInput";
 import TypingIndicator from "./TypingIndicator";
+import { getChatCompletion } from "@/services/openai";
 
 const Chat: React.FC = () => {
   const [messages, setMessages] = useState<MessageType[]>([
@@ -16,6 +17,10 @@ const Chat: React.FC = () => {
     }
   ]);
   const [isLoading, setIsLoading] = useState(false);
+  const [apiKey, setApiKey] = useState<string>(
+    localStorage.getItem("openai_api_key") || ""
+  );
+  const [showApiKeyInput, setShowApiKeyInput] = useState(!localStorage.getItem("openai_api_key"));
   
   const { toast } = useToast();
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -28,7 +33,23 @@ const Chat: React.FC = () => {
     scrollToBottom();
   }, [messages]);
 
+  const handleApiKeySubmit = (key: string) => {
+    setApiKey(key);
+    localStorage.setItem("openai_api_key", key);
+    setShowApiKeyInput(false);
+  };
+
   const handleSendMessage = async (content: string) => {
+    // Check if API key is available
+    if (!apiKey) {
+      setShowApiKeyInput(true);
+      toast({
+        title: "API Key Required",
+        description: "Please enter your OpenAI API key to continue",
+      });
+      return;
+    }
+
     // Add user message
     const newUserMessage: MessageType = {
       id: `user-${Date.now()}`,
@@ -41,20 +62,25 @@ const Chat: React.FC = () => {
     setIsLoading(true);
 
     try {
-      // Simulate API call to LLM
-      await new Promise(resolve => setTimeout(resolve, 1500));
-      
-      // In a real app, you'd call your API here
-      // const response = await fetch("/api/chat", {
-      //   method: "POST",
-      //   body: JSON.stringify({ message: content }),
-      // });
+      // Get conversation history (excluding welcome message if it's the first real exchange)
+      const conversationHistory = messages.length > 1 ? 
+        messages.map(m => ({ role: m.role, content: m.content })) : 
+        [];
+
+      // Add the new user message to history
+      conversationHistory.push({ role: "user", content });
+
+      // Override the OpenAI configuration with the current API key
+      window.openai_key = apiKey;
+
+      // Call OpenAI
+      const aiResponseText = await getChatCompletion(conversationHistory);
       
       // Add AI response
       const aiResponse: MessageType = {
         id: `assistant-${Date.now()}`,
         role: "assistant",
-        content: `I received your message: "${content}". This is a placeholder response. In a real application, this would be replaced with an actual response from an LLM API.`,
+        content: aiResponseText,
         timestamp: new Date()
       };
       
@@ -64,7 +90,7 @@ const Chat: React.FC = () => {
       toast({
         variant: "destructive",
         title: "Error",
-        description: "Failed to get a response from the AI. Please try again."
+        description: "Failed to get a response from OpenAI. Please check your API key and try again."
       });
     } finally {
       setIsLoading(false);
@@ -85,6 +111,34 @@ const Chat: React.FC = () => {
   return (
     <div className="flex flex-col h-full">
       <ChatHeader onClearChat={handleClearChat} />
+      
+      {showApiKeyInput && (
+        <div className="p-4 bg-yellow-50 dark:bg-yellow-900/30">
+          <div className="flex flex-col space-y-2">
+            <label className="text-sm font-medium">
+              Enter your OpenAI API Key:
+            </label>
+            <div className="flex gap-2">
+              <input
+                type="password"
+                value={apiKey}
+                onChange={(e) => setApiKey(e.target.value)}
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                placeholder="sk-..."
+              />
+              <button
+                onClick={() => handleApiKeySubmit(apiKey)}
+                className="bg-primary text-primary-foreground px-3 py-2 rounded-md text-sm font-medium"
+              >
+                Save
+              </button>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Your API key is stored locally and never sent to our servers.
+            </p>
+          </div>
+        </div>
+      )}
       
       <div className="flex-grow overflow-y-auto p-4 space-y-6">
         {messages.map(message => (
