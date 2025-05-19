@@ -6,6 +6,7 @@ import ChatMessage, { MessageType } from "./ChatMessage";
 import ChatInput from "./ChatInput";
 import TypingIndicator from "./TypingIndicator";
 import { getChatCompletion } from "@/services/openai";
+import { getApiKey, saveApiKey } from "@/lib/apiKeyUtils";
 
 const Chat: React.FC = () => {
   const [messages, setMessages] = useState<MessageType[]>([
@@ -17,10 +18,8 @@ const Chat: React.FC = () => {
     }
   ]);
   const [isLoading, setIsLoading] = useState(false);
-  const [apiKey, setApiKey] = useState<string>(
-    localStorage.getItem("openai_api_key") || ""
-  );
-  const [showApiKeyInput, setShowApiKeyInput] = useState(!localStorage.getItem("openai_api_key"));
+  const [apiKey, setApiKey] = useState<string>(getApiKey() || "");
+  const [showApiKeyInput, setShowApiKeyInput] = useState(!getApiKey());
   
   const { toast } = useToast();
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -35,13 +34,17 @@ const Chat: React.FC = () => {
 
   const handleApiKeySubmit = (key: string) => {
     setApiKey(key);
-    localStorage.setItem("openai_api_key", key);
+    saveApiKey(key);
     setShowApiKeyInput(false);
+    toast({
+      title: "API Key Saved",
+      description: "Your OpenAI API key has been saved",
+    });
   };
 
   const handleSendMessage = async (content: string) => {
     // Check if API key is available
-    if (!apiKey) {
+    if (!getApiKey()) {
       setShowApiKeyInput(true);
       toast({
         title: "API Key Required",
@@ -69,9 +72,6 @@ const Chat: React.FC = () => {
 
       // Add the new user message to history
       conversationHistory.push({ role: "user", content });
-
-      // Override the OpenAI configuration with the current API key
-      window.openai_key = apiKey;
 
       // Call OpenAI
       const aiResponseText = await getChatCompletion(conversationHistory);

@@ -1,10 +1,11 @@
 
 import OpenAI from 'openai';
 import { MessageType } from '@/components/ChatMessage';
+import { getApiKey } from '@/lib/apiKeyUtils';
 
-// Initialize OpenAI client
+// Initialize OpenAI client with a function that returns the current API key
 const openai = new OpenAI({
-  apiKey: import.meta.env.VITE_OPENAI_API_KEY,
+  apiKey: 'placeholder_key', // This will be replaced dynamically
   dangerouslyAllowBrowser: true // Only for development - in production use a backend
 });
 
@@ -21,6 +22,16 @@ export async function getChatCompletion(
   options: ChatCompletionOptions = {}
 ): Promise<string> {
   try {
+    // Get the current API key from localStorage
+    const apiKey = getApiKey();
+    
+    if (!apiKey) {
+      throw new Error('API key is required');
+    }
+    
+    // Set the API key for this request
+    openai.apiKey = apiKey;
+
     const completion = await openai.chat.completions.create({
       model: options.model || DEFAULT_MODEL,
       messages: messages.map(msg => ({
