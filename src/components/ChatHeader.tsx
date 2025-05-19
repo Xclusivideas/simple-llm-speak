@@ -1,34 +1,35 @@
 
-import React from "react";
-import { Button } from "@/components/ui/button";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { Trash2 } from "lucide-react";
+import React from 'react';
+import { Button } from '@/components/ui/button';
+import { Trash2, KeyRound } from 'lucide-react';
 
 interface ChatHeaderProps {
   onClearChat: () => void;
+  onResetApiKey: () => void;
 }
 
-const ChatHeader: React.FC<ChatHeaderProps> = ({ onClearChat }) => {
+const ChatHeader: React.FC<ChatHeaderProps> = ({ onClearChat, onResetApiKey }) => {
   return (
-    <div className="flex items-center justify-between border-b bg-background p-4">
-      <h1 className="text-lg font-semibold">Chat with AI</h1>
-      <TooltipProvider>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <Button 
-              variant="ghost" 
-              size="icon"
-              onClick={onClearChat}
-              className="h-8 w-8 text-muted-foreground hover:text-destructive"
-            >
-              <Trash2 size={18} />
-            </Button>
-          </TooltipTrigger>
-          <TooltipContent>
-            <p>Clear conversation</p>
-          </TooltipContent>
-        </Tooltip>
-      </TooltipProvider>
+    <div className="bg-muted/50 border-b p-3 flex justify-between items-center">
+      <h2 className="font-semibold text-lg">Chat with OpenAI</h2>
+      <div className="flex space-x-2">
+        <Button 
+          variant="outline" 
+          size="sm" 
+          onClick={onResetApiKey}
+          title="Change API key"
+        >
+          <KeyRound className="h-4 w-4" />
+        </Button>
+        <Button 
+          variant="outline" 
+          size="sm" 
+          onClick={onClearChat}
+          title="Clear chat"
+        >
+          <Trash2 className="h-4 w-4" />
+        </Button>
+      </div>
     </div>
   );
 };

@@ -1,7 +1,7 @@
 
 import OpenAI from 'openai';
 import { MessageType } from '@/components/ChatMessage';
-import { getApiKey } from '@/lib/apiKeyUtils';
+import { getApiKey, isValidApiKey } from '@/lib/apiKeyUtils';
 
 // Initialize OpenAI client with a function that returns the current API key
 const openai = new OpenAI({
@@ -25,8 +25,8 @@ export async function getChatCompletion(
     // Get the current API key from localStorage
     const apiKey = getApiKey();
     
-    if (!apiKey) {
-      throw new Error('API key is required');
+    if (!isValidApiKey(apiKey)) {
+      throw new Error('Valid API key is required');
     }
     
     // Set the API key for this request
@@ -53,6 +53,8 @@ export async function getChatCompletion(
       } else {
         throw new Error('OpenAI rate limit exceeded. Please try again in a moment.');
       }
+    } else if (error.status === 401) {
+      throw new Error('Invalid API key. Please check your OpenAI API key and try again.');
     }
     
     throw new Error('Failed to get a response from OpenAI');

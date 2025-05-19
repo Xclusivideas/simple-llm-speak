@@ -8,10 +8,18 @@ export const getApiKey = (): string => {
 
 export const saveApiKey = (key: string): void => {
   localStorage.setItem('openai_api_key', key);
+  // Update the global property when saving
+  setupOpenAIKey(key);
 };
 
 export const clearApiKey = (): void => {
   localStorage.removeItem('openai_api_key');
+};
+
+// Check if API key is empty or invalid format
+export const isValidApiKey = (key: string): boolean => {
+  // OpenAI keys typically start with "sk-" and have a minimum length
+  return key && key.trim() !== '' && key.startsWith('sk-') && key.length > 10;
 };
 
 // Override OpenAI configuration with current API key
