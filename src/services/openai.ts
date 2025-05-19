@@ -23,8 +23,8 @@ export const DEFAULT_MODEL = 'gpt-4o-mini';
  */
 function formatMessagesWithFileContext(
   messages: Array<Pick<MessageType, 'role' | 'content' | 'files'>>,
-): Array<{ role: string; content: string }> {
-  const formattedMessages: Array<{ role: string; content: string }> = [];
+): Array<OpenAI.Chat.ChatCompletionMessageParam> {
+  const formattedMessages: Array<OpenAI.Chat.ChatCompletionMessageParam> = [];
   
   // Add a system message explaining the file context feature
   let hasFiles = false;
@@ -64,7 +64,7 @@ function formatMessagesWithFileContext(
     }
     
     formattedMessages.push({
-      role: msg.role,
+      role: msg.role as OpenAI.Chat.ChatCompletionRole,
       content: content
     });
   }
