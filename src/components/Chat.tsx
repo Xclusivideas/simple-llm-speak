@@ -22,9 +22,9 @@ const Chat: React.FC = () => {
   ]);
   const [isLoading, setIsLoading] = useState(false);
   const [apiKey, setApiKey] = useState<string>(getApiKey() || "");
-  // Explicitly check for empty strings and invalid API key format
   const [showApiKeyInput, setShowApiKeyInput] = useState(!isValidApiKey(getApiKey()));
   const [hasFileContext, setHasFileContext] = useState(false);
+  const [fileOnlyMode, setFileOnlyMode] = useState(false);
   
   const { toast } = useToast();
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -80,6 +80,16 @@ const Chat: React.FC = () => {
     });
   };
 
+  const handleToggleFileOnlyMode = () => {
+    setFileOnlyMode(prev => !prev);
+    toast({
+      title: fileOnlyMode ? "General Knowledge Mode" : "File-Only Mode",
+      description: fileOnlyMode 
+        ? "AI will now use both file content and general knowledge" 
+        : "AI will only reference content from uploaded files",
+    });
+  };
+
   const handleSendMessage = async (content: string, files?: FileData[]) => {
     // Check if API key is available and valid
     const currentKey = getApiKey();
@@ -121,8 +131,10 @@ const Chat: React.FC = () => {
         files
       });
 
-      // Call OpenAI
-      const aiResponseText = await getChatCompletion(conversationHistory);
+      // Call OpenAI with file-only mode flag
+      const aiResponseText = await getChatCompletion(conversationHistory, {
+        fileOnlyMode: fileOnlyMode
+      });
       
       // Add AI response
       const aiResponse: MessageType = {
@@ -181,6 +193,8 @@ const Chat: React.FC = () => {
         onClearChat={handleClearChat} 
         onResetApiKey={handleResetApiKey} 
         hasFileContext={hasFileContext}
+        fileOnlyMode={fileOnlyMode}
+        onToggleFileOnlyMode={handleToggleFileOnlyMode}
       />
       
       {showApiKeyInput && (
@@ -230,4 +244,3 @@ const Chat: React.FC = () => {
 };
 
 export default Chat;
-

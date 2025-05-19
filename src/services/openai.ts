@@ -14,6 +14,7 @@ export interface ChatCompletionOptions {
   model?: string;
   temperature?: number;
   maxTokens?: number;
+  fileOnlyMode?: boolean; // New option to restrict responses to file content only
 }
 
 export const DEFAULT_MODEL = 'gpt-4o-mini';
@@ -23,6 +24,7 @@ export const DEFAULT_MODEL = 'gpt-4o-mini';
  */
 function formatMessagesWithFileContext(
   messages: Array<Pick<MessageType, 'role' | 'content' | 'files'>>,
+  fileOnlyMode: boolean = false,
 ): Array<OpenAI.Chat.ChatCompletionMessageParam> {
   const formattedMessages: Array<OpenAI.Chat.ChatCompletionMessageParam> = [];
   
@@ -34,7 +36,18 @@ function formatMessagesWithFileContext(
     }
   });
   
-  if (hasFiles) {
+  // Add appropriate system message based on mode
+  if (fileOnlyMode) {
+    formattedMessages.push({
+      role: 'system',
+      content: `You are an assistant that ONLY references information found in the files shared by the user. 
+      - You must ONLY use information contained in the uploaded files to answer questions
+      - If information needed to answer a question is not in the files, respond with: "I don't see that information in the uploaded files."
+      - Do NOT use any outside knowledge or information you were trained on
+      - When quoting or referring to file content, specify which file the information came from
+      - Be clear about what you can and cannot determine from the provided files`
+    });
+  } else if (hasFiles) {
     formattedMessages.push({
       role: 'system',
       content: `You are an assistant that can access and analyze file content shared by the user. When referencing file content in your responses, be specific about which file you're referring to.`
@@ -54,7 +67,7 @@ function formatMessagesWithFileContext(
       msg.files.forEach(file => {
         content += `\n--- FILE: ${file.name} ---\n`;
         content += file.content;
-        content += '\n--- END FILE ---\n\n';
+        content += '\n--- END FILE ---\n\n`;
       });
       
       // If it's a user message with files but no text, add a default question
@@ -91,8 +104,8 @@ export async function getChatCompletion(
     // Set the API key for this request
     openai.apiKey = apiKey;
 
-    // Format messages to include file content if present
-    const formattedMessages = formatMessagesWithFileContext(messages);
+    // Format messages to include file content if present and respect file-only mode
+    const formattedMessages = formatMessagesWithFileContext(messages, options.fileOnlyMode);
 
     const completion = await openai.chat.completions.create({
       model: options.model || DEFAULT_MODEL,
