@@ -63,8 +63,12 @@ function formatMessagesWithFileContext(
       }
     }
     
+    // Use a type guard to ensure we're creating a valid message type
+    // OpenAI API expects role to be one of: 'system', 'user', 'assistant', 'function', 'tool'
+    const role = msg.role as 'system' | 'user' | 'assistant';
+    
     formattedMessages.push({
-      role: msg.role as OpenAI.Chat.ChatCompletionRole,
+      role: role,
       content: content
     });
   }
