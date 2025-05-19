@@ -2,12 +2,14 @@
 import React from "react";
 import { cn } from "@/lib/utils";
 import { Avatar } from "@/components/ui/avatar";
+import FileAttachment, { FileData } from "./FileAttachment";
 
 export type MessageType = {
   id: string;
   content: string;
   role: "user" | "assistant";
   timestamp?: Date;
+  files?: FileData[];
 };
 
 interface ChatMessageProps {
@@ -31,6 +33,15 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message }) => {
       )}
       
       <div className="flex flex-col max-w-[80%] md:max-w-[70%]">
+        {/* Files list */}
+        {message.files && message.files.length > 0 && (
+          <div className="flex flex-col gap-1 mb-2">
+            {message.files.map((file) => (
+              <FileAttachment key={file.id} file={file} />
+            ))}
+          </div>
+        )}
+        
         <div
           className={cn(
             "px-4 py-3 rounded-xl break-words",
@@ -41,6 +52,7 @@ const ChatMessage: React.FC<ChatMessageProps> = ({ message }) => {
         >
           {message.content}
         </div>
+        
         {message.timestamp && (
           <span className={cn("text-xs text-muted-foreground mt-1", 
             isUser ? "text-right" : "text-left"

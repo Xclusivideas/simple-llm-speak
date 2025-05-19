@@ -9,14 +9,14 @@ import { getChatCompletion } from "@/services/openai";
 import { getApiKey, saveApiKey, clearApiKey, isValidApiKey } from "@/lib/apiKeyUtils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { KeyRound } from "lucide-react";
+import { FileData } from "./FileAttachment";
 
 const Chat: React.FC = () => {
   const [messages, setMessages] = useState<MessageType[]>([
     {
       id: "welcome",
       role: "assistant",
-      content: "Hello! How can I assist you today?",
+      content: "Hello! How can I assist you today? You can upload files and I'll analyze them for you.",
       timestamp: new Date()
     }
   ]);
@@ -24,6 +24,7 @@ const Chat: React.FC = () => {
   const [apiKey, setApiKey] = useState<string>(getApiKey() || "");
   // Explicitly check for empty strings and invalid API key format
   const [showApiKeyInput, setShowApiKeyInput] = useState(!isValidApiKey(getApiKey()));
+  const [hasFileContext, setHasFileContext] = useState(false);
   
   const { toast } = useToast();
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -43,6 +44,12 @@ const Chat: React.FC = () => {
       setShowApiKeyInput(true);
     }
   }, []);
+
+  // Effect to check if any messages have file context
+  useEffect(() => {
+    const hasFiles = messages.some(msg => msg.files && msg.files.length > 0);
+    setHasFileContext(hasFiles);
+  }, [messages]);
 
   const handleApiKeySubmit = (key: string) => {
     if (!isValidApiKey(key)) {
@@ -73,7 +80,7 @@ const Chat: React.FC = () => {
     });
   };
 
-  const handleSendMessage = async (content: string) => {
+  const handleSendMessage = async (content: string, files?: FileData[]) => {
     // Check if API key is available and valid
     const currentKey = getApiKey();
     if (!isValidApiKey(currentKey)) {
@@ -90,7 +97,8 @@ const Chat: React.FC = () => {
       id: `user-${Date.now()}`,
       role: "user",
       content,
-      timestamp: new Date()
+      timestamp: new Date(),
+      files
     };
     
     setMessages(prev => [...prev, newUserMessage]);
@@ -99,11 +107,19 @@ const Chat: React.FC = () => {
     try {
       // Get conversation history (excluding welcome message if it's the first real exchange)
       const conversationHistory = messages.length > 1 ? 
-        messages.map(m => ({ role: m.role, content: m.content })) : 
+        messages.map(m => ({ 
+          role: m.role, 
+          content: m.content,
+          files: m.files 
+        })) : 
         [];
 
       // Add the new user message to history
-      conversationHistory.push({ role: "user", content });
+      conversationHistory.push({ 
+        role: "user", 
+        content,
+        files
+      });
 
       // Call OpenAI
       const aiResponseText = await getChatCompletion(conversationHistory);
@@ -132,6 +148,8 @@ const Chat: React.FC = () => {
       } else if (error.message?.includes('API key')) {
         errorDescription = "Invalid API key. Please check your OpenAI API key and try again.";
         setShowApiKeyInput(true);
+      } else if (error.message?.includes('too large for the model')) {
+        errorDescription = "The files you uploaded are too large for the model's context window. Try with smaller files.";
       }
       
       toast({
@@ -149,15 +167,21 @@ const Chat: React.FC = () => {
       {
         id: "welcome",
         role: "assistant",
-        content: "Hello! How can I assist you today?",
+        content: "Hello! How can I assist you today? You can upload files and I'll analyze them for you.",
         timestamp: new Date()
       }
     ]);
+    // Reset file context flag
+    setHasFileContext(false);
   };
 
   return (
     <div className="flex flex-col h-full">
-      <ChatHeader onClearChat={handleClearChat} onResetApiKey={handleResetApiKey} />
+      <ChatHeader 
+        onClearChat={handleClearChat} 
+        onResetApiKey={handleResetApiKey} 
+        hasFileContext={hasFileContext}
+      />
       
       {showApiKeyInput && (
         <div className="p-4 bg-yellow-50 dark:bg-yellow-900/30">
@@ -206,3 +230,4 @@ const Chat: React.FC = () => {
 };
 
 export default Chat;
+
