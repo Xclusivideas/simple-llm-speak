@@ -67,7 +67,7 @@ function formatMessagesWithFileContext(
       msg.files.forEach(file => {
         content += `\n--- FILE: ${file.name} ---\n`;
         content += file.content;
-        content += '\n--- END FILE ---\n\n`;
+        content += `\n--- END FILE ---\n\n`; // Fixed this line - was mixing quotes and backticks
       });
       
       // If it's a user message with files but no text, add a default question
